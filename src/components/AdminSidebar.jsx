@@ -102,7 +102,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
         {/* User Portal Link */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
           <a
-            href="http://localhost:5173"
+            href={import.meta.env.VITE_USER_URL || 'http://localhost:5173'}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition group"

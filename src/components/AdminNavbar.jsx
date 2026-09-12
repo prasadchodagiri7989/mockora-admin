@@ -28,7 +28,7 @@ export default function AdminNavbar({ onToggleSidebar }) {
       <div className="flex items-center gap-4">
         {/* Switch to User Portal Link */}
         <a
-          href="http://localhost:5173"
+          href={import.meta.env.VITE_USER_URL || 'http://localhost:5173'}
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
