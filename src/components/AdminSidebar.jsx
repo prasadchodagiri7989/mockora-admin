@@ -11,11 +11,15 @@ import {
   BarChart3, 
   ShieldCheck, 
   X,
-  ExternalLink
+  ExternalLink,
+  Receipt,
+  MessageSquare
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard Overview', path: '/', icon: LayoutDashboard },
+  { name: 'Transactions & Orders', path: '/transactions', icon: Receipt },
+  { name: 'Chat Messages', path: '/chat', icon: MessageSquare },
   { name: 'User Management', path: '/users', icon: Users },
   { name: 'Exam Categories', path: '/categories', icon: FolderTree },
   { name: 'Mock Test Manager', path: '/tests', icon: GraduationCap },
@@ -48,10 +52,10 @@ export default function AdminSidebar({ isOpen, onClose }) {
             </div>
             <div>
               <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Admin<span className="text-indigo-600 dark:text-indigo-400">Hub</span>
+                Mock<span className="text-indigo-600 dark:text-indigo-400">Ora</span>
               </span>
               <span className="block text-[10px] font-bold text-rose-500 -mt-1 tracking-wider uppercase">
-                Content Manager
+                Admin Panel
               </span>
             </div>
           </Link>

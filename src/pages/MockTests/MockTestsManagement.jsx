@@ -19,7 +19,11 @@ import {
   Tag,
   AlertCircle,
   FileText,
-  CheckSquare
+  CheckSquare,
+  MoreVertical,
+  Layers,
+  FolderPlus,
+  Check
 } from 'lucide-react';
 
 export default function MockTestsManagement() {
@@ -46,6 +50,13 @@ export default function MockTestsManagement() {
   const [duration, setDuration] = useState(30);
   const [status, setStatus] = useState('published');
   const [testQuestions, setTestQuestions] = useState([]); // array of Question objects
+  const [sections, setSections] = useState([]); // array of { name: string, description: string }
+  const [activeSectionFilter, setActiveSectionFilter] = useState('all'); // 'all' or section name
+  const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+  const [editingSectionIndex, setEditingSectionIndex] = useState(null);
+  const [sectionFormName, setSectionFormName] = useState('');
+  const [sectionFormDesc, setSectionFormDesc] = useState('');
+  const [openQuestionMenuIndex, setOpenQuestionMenuIndex] = useState(null); // original index of question with menu open
 
   // Question Editor Modal
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
@@ -95,6 +106,9 @@ export default function MockTestsManagement() {
     setDuration(30);
     setStatus('published');
     setTestQuestions([]);
+    setSections([]);
+    setActiveSectionFilter('all');
+    setOpenQuestionMenuIndex(null);
     setIsTestModalOpen(true);
   };
 
@@ -112,12 +126,18 @@ export default function MockTestsManagement() {
     setDefaultQuestionTime(test.timing?.defaultQuestionTime || 60);
     setDuration(test.timing?.duration || 30);
     setStatus(test.status || 'published');
+    setSections(test.sections || []);
+    setActiveSectionFilter('all');
+    setOpenQuestionMenuIndex(null);
 
     // Fetch full test with populated questions
     try {
       const res = await api.get(`/tests/${test._id}`);
       if (res.data.success) {
         setTestQuestions(res.data.test.questions || []);
+        if (res.data.test.sections) {
+          setSections(res.data.test.sections || []);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch test questions:', err);
@@ -181,12 +201,84 @@ export default function MockTestsManagement() {
       updated[editingQuestionIndex] = questionData;
       setTestQuestions(updated);
     } else {
-      setTestQuestions([...testQuestions, questionData]);
+      const qWithSection = {
+        ...questionData,
+        section: questionData.section || (activeSectionFilter !== 'all' ? activeSectionFilter : ''),
+      };
+      setTestQuestions([...testQuestions, qWithSection]);
     }
   };
 
   const handleRemoveQuestion = (index) => {
     setTestQuestions(testQuestions.filter((_, i) => i !== index));
+    if (openQuestionMenuIndex === index) setOpenQuestionMenuIndex(null);
+  };
+
+  // Section Management Handlers
+  const handleOpenAddSection = () => {
+    setEditingSectionIndex(null);
+    setSectionFormName('');
+    setSectionFormDesc('');
+    setIsSectionModalOpen(true);
+  };
+
+  const handleOpenEditSection = (index) => {
+    setEditingSectionIndex(index);
+    setSectionFormName(sections[index]?.name || '');
+    setSectionFormDesc(sections[index]?.description || '');
+    setIsSectionModalOpen(true);
+  };
+
+  const handleSaveSection = (e) => {
+    e.preventDefault();
+    const trimmedName = sectionFormName.trim();
+    if (!trimmedName) {
+      alert('Section name is required.');
+      return;
+    }
+    if (editingSectionIndex !== null) {
+      const oldName = sections[editingSectionIndex].name;
+      const updated = [...sections];
+      updated[editingSectionIndex] = {
+        name: trimmedName,
+        description: sectionFormDesc.trim(),
+      };
+      setSections(updated);
+      if (oldName !== trimmedName) {
+        setTestQuestions(prev => prev.map(q => q.section === oldName ? { ...q, section: trimmedName } : q));
+        if (activeSectionFilter === oldName) setActiveSectionFilter(trimmedName);
+      }
+    } else {
+      if (sections.some(s => s.name.toLowerCase() === trimmedName.toLowerCase())) {
+        alert('A section with this name already exists.');
+        return;
+      }
+      setSections([...sections, { name: trimmedName, description: sectionFormDesc.trim() }]);
+      setActiveSectionFilter(trimmedName);
+    }
+    setIsSectionModalOpen(false);
+  };
+
+  const handleDeleteSection = (indexToDelete) => {
+    const secToDelete = sections[indexToDelete];
+    if (!window.confirm(`Are you sure you want to delete section "${secToDelete.name}"? Questions in this section will become unassigned.`)) {
+      return;
+    }
+    setSections(sections.filter((_, i) => i !== indexToDelete));
+    setTestQuestions(prev => prev.map(q => q.section === secToDelete.name ? { ...q, section: '' } : q));
+    if (activeSectionFilter === secToDelete.name) {
+      setActiveSectionFilter('all');
+    }
+  };
+
+  const handleMoveQuestionToSection = (targetOriginalIdx, targetSectionName) => {
+    const updated = [...testQuestions];
+    updated[targetOriginalIdx] = {
+      ...updated[targetOriginalIdx],
+      section: targetSectionName,
+    };
+    setTestQuestions(updated);
+    setOpenQuestionMenuIndex(null);
   };
 
   // Submit test creation / update with specific target status
@@ -210,6 +302,7 @@ export default function MockTestsManagement() {
       description,
       instructions,
       tags: parsedTags,
+      sections: sections.map(s => ({ name: s.name, description: s.description || '' })),
       categoryId,
       difficulty,
       timing: {
@@ -658,91 +751,310 @@ export default function MockTestsManagement() {
             )}
           </div>
 
-          {/* Question List in this Test */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+          {/* Sections & Question Management in this Test */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80 dark:border-slate-800">
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Questions Included ({testQuestions.length})
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Sections & Question Authoring ({testQuestions.length} Questions)</span>
                 </h4>
+                <p className="text-[11px] text-slate-400">
+                  Organize questions into sections with custom descriptions and instructions.
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={handleOpenAddQuestion}
-                className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-100 transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Question</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenAddSection}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition"
+                >
+                  <FolderPlus className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Add Section</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenAddQuestion}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Question</span>
+                </button>
+              </div>
             </div>
 
-            {testQuestions.length === 0 ? (
-              <div className="p-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-400">
-                No questions added to this test yet. Click "Add Question" above to author Single MCQ, Multi-Answer, or Blank questions.
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {testQuestions.map((q, idx) => (
-                  <div
-                    key={q._id || idx}
-                    className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3 text-xs"
+            {/* Sections Pills / Tab Bar */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setActiveSectionFilter('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                  activeSectionFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                <span>All Questions</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  activeSectionFilter === 'all' ? 'bg-indigo-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}>
+                  {testQuestions.length}
+                </span>
+              </button>
+
+              {sections.map((sec, sIdx) => {
+                const qCount = testQuestions.filter(q => q.section === sec.name).length;
+                const isActive = activeSectionFilter === sec.name;
+                return (
+                  <button
+                    key={sIdx}
+                    type="button"
+                    onClick={() => setActiveSectionFilter(sec.name)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <p className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
-                          {q.text}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-[10px] text-slate-400">
-                            {q.subject || 'General'} • {q.topic || 'Item'} • (+{q.marks || 4} / -{q.negativeMarks || 1})
-                          </span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-600">
-                            {q.questionType === 'multiple' ? 'Multi-Answer' : q.questionType === 'blank' ? 'Blank' : 'Single MCQ'}
-                          </span>
-                          {q.codeSnippet && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                              Code
+                    <span>{sec.name}</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                      isActive ? 'bg-indigo-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}>
+                      {qCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Section Description & Controls Banner */}
+            {activeSectionFilter !== 'all' && (
+              <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 flex items-start justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-indigo-900 dark:text-indigo-200">
+                      {activeSectionFilter}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-200/60 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
+                      {testQuestions.filter(q => q.section === activeSectionFilter).length} questions
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                    {sections.find(s => s.name === activeSectionFilter)?.description || 'No section description provided.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = sections.findIndex(s => s.name === activeSectionFilter);
+                      if (idx !== -1) handleOpenEditSection(idx);
+                    }}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-600 hover:text-indigo-600 shadow-2xs transition"
+                    title="Edit Section Name / Description"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = sections.findIndex(s => s.name === activeSectionFilter);
+                      if (idx !== -1) handleDeleteSection(idx);
+                    }}
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-600 hover:text-rose-600 shadow-2xs transition"
+                    title="Delete Section"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Questions List */}
+            {(() => {
+              const displayedQuestions = testQuestions
+                .map((q, originalIdx) => ({ q, originalIdx }))
+                .filter(({ q }) => activeSectionFilter === 'all' || (q.section || '') === activeSectionFilter);
+
+              if (displayedQuestions.length === 0) {
+                return (
+                  <div className="p-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-400">
+                    {activeSectionFilter === 'all'
+                      ? 'No questions added to this test yet. Click "Add Question" above to author questions.'
+                      : `No questions assigned to "${activeSectionFilter}" yet. Click "Add Question" or move existing questions here using the question action menu.`}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-2 max-h-72 overflow-y-auto p-1">
+                  {displayedQuestions.map(({ q, originalIdx }) => (
+                    <div
+                      key={q._id || originalIdx}
+                      className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3 text-xs hover:border-slate-300 dark:hover:border-slate-700 transition"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 font-bold flex items-center justify-center shrink-0">
+                          {originalIdx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                            {q.text}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {q.section && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 flex items-center gap-1">
+                                <Layers className="w-3 h-3" />
+                                <span>{q.section}</span>
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-400">
+                              {q.subject || 'General'} • {q.topic || 'Item'} • (+{q.marks || 4} / -{q.negativeMarks || 1})
                             </span>
-                          )}
-                          {q.passageSnippet && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-600">
-                              Passage
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-600">
+                              {q.questionType === 'multiple' ? 'Multi-Answer' : q.questionType === 'blank' ? 'Blank' : 'Single MCQ'}
                             </span>
-                          )}
-                          {timingMode === 'perQuestion' && !sameTimePerQuestion && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-50 dark:bg-rose-950 text-rose-600">
-                              {q.timeLimitSeconds || defaultQuestionTime}s
-                            </span>
+                            {q.codeSnippet && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                Code
+                              </span>
+                            )}
+                            {q.passageSnippet && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-600">
+                                Passage
+                              </span>
+                            )}
+                            {timingMode === 'perQuestion' && !sameTimePerQuestion && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-rose-50 dark:bg-rose-950 text-rose-600">
+                                {q.timeLimitSeconds || defaultQuestionTime}s
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 relative">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditQuestion(originalIdx)}
+                          className="p-1.5 text-slate-400 hover:text-amber-600 transition"
+                          title="Edit Question"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveQuestion(originalIdx)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                          title="Remove Question"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+
+                        {/* Question Menu Button with Move to Section */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setOpenQuestionMenuIndex(openQuestionMenuIndex === originalIdx ? null : originalIdx)}
+                            className={`p-1.5 rounded-lg transition ${
+                              openQuestionMenuIndex === originalIdx
+                                ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600'
+                                : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                            }`}
+                            title="Question Menu / Move to Section"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {/* Action Dropdown Menu */}
+                          {openQuestionMenuIndex === originalIdx && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setOpenQuestionMenuIndex(null)}
+                              />
+                              <div className="absolute right-0 top-8 z-50 w-56 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-2 text-xs animate-in fade-in zoom-in-95 duration-100">
+                                <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                  <span>Move to Section</span>
+                                  <Layers className="w-3 h-3 text-indigo-500" />
+                                </div>
+
+                                <div className="py-1 space-y-0.5 max-h-40 overflow-y-auto">
+                                  {/* Unassigned Option */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveQuestionToSection(originalIdx, '')}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition ${
+                                      !q.section
+                                        ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 font-bold'
+                                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
+                                  >
+                                    <span className="truncate">Default / General</span>
+                                    {!q.section && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                                  </button>
+
+                                  {sections.length === 0 ? (
+                                    <div className="px-2.5 py-1.5 text-[11px] text-slate-400 italic">
+                                      No sections created yet. Click "+ Add Section" to create one.
+                                    </div>
+                                  ) : (
+                                    sections.map((sec, sIdx) => {
+                                      const isCurrent = q.section === sec.name;
+                                      return (
+                                        <button
+                                          key={sIdx}
+                                          type="button"
+                                          onClick={() => handleMoveQuestionToSection(originalIdx, sec.name)}
+                                          className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition ${
+                                            isCurrent
+                                              ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 font-bold'
+                                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                          }`}
+                                        >
+                                          <span className="truncate">{sec.name}</span>
+                                          {isCurrent && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                                        </button>
+                                      );
+                                    })
+                                  )}
+                                </div>
+
+                                <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800 space-y-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenQuestionMenuIndex(null);
+                                      handleOpenEditQuestion(originalIdx);
+                                    }}
+                                    className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>Edit Question</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenQuestionMenuIndex(null);
+                                      handleRemoveQuestion(originalIdx);
+                                    }}
+                                    className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Remove Question</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditQuestion(idx)}
-                        className="p-1.5 text-slate-400 hover:text-amber-600 transition"
-                        title="Edit Question"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveQuestion(idx)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                        title="Remove Question"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Action Buttons: Save as Draft vs Publish */}
@@ -785,9 +1097,65 @@ export default function MockTestsManagement() {
           initialData={editingQuestionIndex !== null ? testQuestions[editingQuestionIndex] : null}
           categories={categories}
           defaultCategoryId={categoryId}
+          sections={sections}
+          defaultSection={activeSectionFilter !== 'all' ? activeSectionFilter : ''}
           showQuestionTimer={timingMode === 'perQuestion' && !sameTimePerQuestion}
         />
       )}
+
+      {/* Section Authoring / Edit Modal */}
+      <Modal
+        isOpen={isSectionModalOpen}
+        onClose={() => setIsSectionModalOpen(false)}
+        title={editingSectionIndex !== null ? 'Edit Test Section' : 'Create New Test Section'}
+        subtitle="Configure section title and candidate instructions or syllabus scope"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleSaveSection} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Section Title <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={sectionFormName}
+              onChange={(e) => setSectionFormName(e.target.value)}
+              placeholder="e.g. Section A: Quantitative Aptitude"
+              className="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Section Description / Instructions
+            </label>
+            <textarea
+              rows={3}
+              value={sectionFormDesc}
+              onChange={(e) => setSectionFormDesc(e.target.value)}
+              placeholder="e.g. Contains 20 questions covering mechanics. +4 marks for correct, -1 for incorrect."
+              className="w-full px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsSectionModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition"
+            >
+              {editingSectionIndex !== null ? 'Update Section' : 'Save Section'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Test Analytics Modal */}
       {selectedTestAnalytics && (

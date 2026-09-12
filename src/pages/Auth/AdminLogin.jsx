@@ -4,8 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState('admin@universalmock.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('chodagiriprasad5@gmail.com');
+  const [password, setPassword] = useState('Yashu@1818');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -51,11 +51,11 @@ export default function AdminLogin() {
 
         <div className="mb-6 p-3.5 rounded-xl bg-indigo-950/50 border border-indigo-800/60 text-xs">
           <p className="font-semibold text-indigo-300 mb-1">
-            Pre-filled Administrator Account:
+            Verified Administrator Account:
           </p>
           <div className="font-mono text-[11px] text-slate-300 space-y-0.5">
-            <p>Email: <span className="text-indigo-400">admin@universalmock.com</span></p>
-            <p>Pass: <span className="text-indigo-400">Admin@123</span></p>
+            <p>Email: <span className="text-indigo-400">chodagiriprasad5@gmail.com</span></p>
+            <p>Pass: <span className="text-indigo-400">Yashu@1818</span></p>
           </div>
         </div>
 

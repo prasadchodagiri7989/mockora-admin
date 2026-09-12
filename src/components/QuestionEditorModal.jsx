@@ -9,9 +9,12 @@ export default function QuestionEditorModal({
   initialData, 
   categories = [],
   defaultCategoryId = '',
+  sections = [],
+  defaultSection = '',
   showQuestionTimer = false
 }) {
   const [text, setText] = useState(initialData?.text || '');
+  const [section, setSection] = useState(initialData?.section || defaultSection || '');
   
   // Question Type: 'single' | 'multiple' | 'blank'
   const [questionType, setQuestionType] = useState(initialData?.questionType || 'single');
@@ -104,6 +107,7 @@ export default function QuestionEditorModal({
       _id: initialData?._id,
       text,
       questionType,
+      section: section || '',
       codeSnippet: hasCodeSnippet ? codeSnippet : '',
       passageSnippet: hasPassageSnippet ? passageSnippet : '',
       subject: subject || 'General',
@@ -404,6 +408,50 @@ export default function QuestionEditorModal({
             </div>
           </div>
         )}
+
+        {/* Section and Subject / Topic Classification */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+              Test Section
+            </label>
+            <select
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-200"
+            >
+              <option value="">-- General / No Section --</option>
+              {sections.map((sec, sIdx) => {
+                const secName = typeof sec === 'string' ? sec : sec.name;
+                return (
+                  <option key={sIdx} value={secName}>
+                    {secName}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Subject</label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Physics, Quantitative"
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Topic</label>
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. Thermodynamics, Algebra"
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200"
+            />
+          </div>
+        </div>
 
         {/* Scoring & Timing */}
         <div className={`grid ${showQuestionTimer ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>

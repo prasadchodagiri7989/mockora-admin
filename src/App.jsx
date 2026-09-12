@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -15,6 +15,8 @@ import PracticeManagement from './pages/Practice/PracticeManagement';
 import ResourcesManagement from './pages/Resources/ResourcesManagement';
 import JobsManagement from './pages/Jobs/JobsManagement';
 import PlatformAnalytics from './pages/Analytics/PlatformAnalytics';
+import TransactionsManagement from './pages/Transactions/TransactionsManagement';
+import ChatMessages from './pages/Chat/ChatMessages';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -47,73 +49,7 @@ function AdminLayout() {
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
         <AdminNavbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-y-auto">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <UsersManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/categories"
-              element={
-                <ProtectedRoute>
-                  <CategoriesManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tests"
-              element={
-                <ProtectedRoute>
-                  <MockTestsManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/practice"
-              element={
-                <ProtectedRoute>
-                  <PracticeManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resources"
-              element={
-                <ProtectedRoute>
-                  <ResourcesManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/jobs"
-              element={
-                <ProtectedRoute>
-                  <JobsManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <PlatformAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Outlet />
         </main>
       </div>
     </div>
@@ -127,10 +63,29 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<AdminLogin />} />
-            <Route path="/*" element={<AdminLayout />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<AdminDashboard />} />
+              <Route path="/transactions" element={<TransactionsManagement />} />
+              <Route path="/chat" element={<ChatMessages />} />
+              <Route path="/users" element={<UsersManagement />} />
+              <Route path="/categories" element={<CategoriesManagement />} />
+              <Route path="/tests" element={<MockTestsManagement />} />
+              <Route path="/practice" element={<PracticeManagement />} />
+              <Route path="/resources" element={<ResourcesManagement />} />
+              <Route path="/jobs" element={<JobsManagement />} />
+              <Route path="/analytics" element={<PlatformAnalytics />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
   );
 }
+
