@@ -46,18 +46,11 @@ export default function AdminSidebar({ isOpen, onClose }) {
       >
         {/* Brand */}
         <div className="h-16 px-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30 font-extrabold text-sm">
-              M
-            </div>
-            <div>
-              <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Mock<span className="text-indigo-600 dark:text-indigo-400">Ora</span>
-              </span>
-              <span className="block text-[10px] font-bold text-rose-500 -mt-1 tracking-wider uppercase">
-                Admin Panel
-              </span>
-            </div>
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/mockora-logo.png" alt="MockOra Admin" className="h-8 w-auto object-contain" />
+            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20">
+              Admin
+            </span>
           </Link>
 
           <button

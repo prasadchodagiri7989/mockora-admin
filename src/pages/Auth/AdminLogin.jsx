@@ -31,13 +31,16 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900 text-white">
       <div className="w-full max-w-md bg-slate-800/90 border border-slate-700/80 rounded-3xl p-8 shadow-2xl backdrop-blur-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 mb-3">
-            <ShieldAlert className="w-6 h-6" />
+          <div className="inline-block mb-3 p-3 bg-white/5 rounded-2xl border border-white/10">
+            <img src="/mockora-logo.png" alt="MockOra Admin" className="h-10 w-auto mx-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">
-            Admin<span className="text-indigo-400">Portal</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 text-rose-400 text-xs font-bold border border-rose-500/25">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Administrator Console</span>
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
             Sign in with verified administrator credentials to manage platform operations.
           </p>
         </div>
