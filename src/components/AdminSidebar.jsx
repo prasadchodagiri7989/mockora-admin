@@ -13,12 +13,14 @@ import {
   X,
   ExternalLink,
   Receipt,
-  MessageSquare
+  MessageSquare,
+  Tag
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard Overview', path: '/', icon: LayoutDashboard },
   { name: 'Transactions & Orders', path: '/transactions', icon: Receipt },
+  { name: 'Coupons & Discounts', path: '/coupons', icon: Tag },
   { name: 'Chat Messages', path: '/chat', icon: MessageSquare },
   { name: 'User Management', path: '/users', icon: Users },
   { name: 'Exam Categories', path: '/categories', icon: FolderTree },

@@ -17,6 +17,7 @@ import JobsManagement from './pages/Jobs/JobsManagement';
 import PlatformAnalytics from './pages/Analytics/PlatformAnalytics';
 import TransactionsManagement from './pages/Transactions/TransactionsManagement';
 import ChatMessages from './pages/Chat/ChatMessages';
+import CouponsManagement from './pages/Coupons/CouponsManagement';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -72,6 +73,7 @@ export default function App() {
             >
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/transactions" element={<TransactionsManagement />} />
+              <Route path="/coupons" element={<CouponsManagement />} />
               <Route path="/chat" element={<ChatMessages />} />
               <Route path="/users" element={<UsersManagement />} />
               <Route path="/categories" element={<CategoriesManagement />} />
