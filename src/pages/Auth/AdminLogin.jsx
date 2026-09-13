@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState('chodagiriprasad5@gmail.com');
-  const [password, setPassword] = useState('Yashu@1818');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -52,16 +52,6 @@ export default function AdminLogin() {
           </div>
         )}
 
-        <div className="mb-6 p-3.5 rounded-xl bg-indigo-950/50 border border-indigo-800/60 text-xs">
-          <p className="font-semibold text-indigo-300 mb-1">
-            Verified Administrator Account:
-          </p>
-          <div className="font-mono text-[11px] text-slate-300 space-y-0.5">
-            <p>Email: <span className="text-indigo-400">chodagiriprasad5@gmail.com</span></p>
-            <p>Pass: <span className="text-indigo-400">Yashu@1818</span></p>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -74,6 +64,7 @@ export default function AdminLogin() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@mockora.com"
                 className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
@@ -90,6 +81,7 @@ export default function AdminLogin() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
                 className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>

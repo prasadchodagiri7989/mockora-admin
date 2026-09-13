@@ -9,6 +9,8 @@ import {
   CheckCircle, 
   Trash2, 
   Eye, 
+  EyeOff,
+  Key,
   History,
   ArrowUpDown,
   Filter
@@ -25,6 +27,53 @@ export default function UsersManagement() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [attempts, setAttempts] = useState([]);
   const [loadingAttempts, setLoadingAttempts] = useState(false);
+
+  // Change Password Modal
+  const [passwordUser, setPasswordUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [notifyUserByEmail, setNotifyUserByEmail] = useState(true);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState({ text: '', type: '' });
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+    let pass = 'Mock@';
+    for (let i = 0; i < 6; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pass);
+    setShowPassword(true);
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!passwordUser || !newPassword || newPassword.trim().length < 6) return;
+    setPasswordLoading(true);
+    setPasswordMsg({ text: '', type: '' });
+
+    try {
+      const res = await api.put(`/users/${passwordUser._id}/password`, {
+        newPassword: newPassword.trim(),
+        notifyUser: notifyUserByEmail,
+      });
+      if (res.data.success) {
+        setPasswordMsg({ text: res.data.message || 'Password changed successfully!', type: 'success' });
+        setTimeout(() => {
+          setPasswordUser(null);
+          setNewPassword('');
+          setPasswordMsg({ text: '', type: '' });
+        }, 1800);
+      }
+    } catch (err) {
+      setPasswordMsg({
+        text: err.response?.data?.message || 'Failed to update user password.',
+        type: 'error',
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -217,6 +266,17 @@ export default function UsersManagement() {
                           <History className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => {
+                            setPasswordUser(u);
+                            setNewPassword('');
+                            setPasswordMsg({ text: '', type: '' });
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition"
+                          title="Change User Password"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleToggleRole(u)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                           title={u.role === 'admin' ? 'Demote to Candidate' : 'Promote to Admin'}
@@ -294,6 +354,97 @@ export default function UsersManagement() {
               ))}
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Change Password Modal */}
+      {passwordUser && (
+        <Modal
+          isOpen={!!passwordUser}
+          onClose={() => {
+            setPasswordUser(null);
+            setNewPassword('');
+            setPasswordMsg({ text: '', type: '' });
+          }}
+          title="Change User Password"
+          subtitle={`Set a new login password for ${passwordUser.name} (${passwordUser.email})`}
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            {passwordMsg.text && (
+              <div className={`p-3 rounded-xl text-xs font-semibold ${
+                passwordMsg.type === 'success'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+              }`}>
+                {passwordMsg.text}
+              </div>
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  New Password
+                </label>
+                <button
+                  type="button"
+                  onClick={generateRandomPassword}
+                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Generate Password
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimum 6 characters..."
+                  required
+                  minLength={6}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:outline-hidden focus:ring-2 focus:ring-indigo-500 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={notifyUserByEmail}
+                onChange={(e) => setNotifyUserByEmail(e.target.checked)}
+                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span>Send new credentials to user's registered email</span>
+            </label>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordUser(null);
+                  setNewPassword('');
+                  setPasswordMsg({ text: '', type: '' });
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={passwordLoading || !newPassword || newPassword.trim().length < 6}
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5"
+              >
+                {passwordLoading ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>
